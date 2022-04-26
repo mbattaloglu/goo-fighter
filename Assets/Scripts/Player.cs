@@ -8,17 +8,22 @@ public class Player : MonoBehaviour
 
     public GameObject bullet;
 
-    public float speed;
-    public float radius;
+    public float movingSpeed;
+    public float bulletSpeed;
+    public float range;
+    public float attackSpeed;
 
     bool isEnemySpotted;
     bool isTouching;
     bool isShooting;
+    bool canShot;
 
     float x1, y1, x2, y2;
 
     GameObject closestEnemy;
     float distanceBetweenClosestEnemy;
+
+    float count = 0;
 
     Transform touchingBulletPoint;
     Transform idleBulletPoint;
@@ -34,13 +39,12 @@ public class Player : MonoBehaviour
     void Update()
     {
         LayerMask enemyLayer = LayerMask.GetMask("Enemy");
-        Collider[] enemies = Physics.OverlapSphere(transform.position, radius, enemyLayer, QueryTriggerInteraction.UseGlobal);
-        Debug.Log(enemies.Length);
+        Collider[] enemies = Physics.OverlapSphere(transform.position, range, enemyLayer, QueryTriggerInteraction.UseGlobal);
 
         if (enemies.Length >= 1)
         {
-            isEnemySpotted = true;
             animator.SetBool("isEnemySpotted", true);
+            isEnemySpotted = true;
         }
 
         else
@@ -49,12 +53,10 @@ public class Player : MonoBehaviour
             isEnemySpotted = false;
         }
 
-
-
         if (Input.GetMouseButton(0))
         {
             Vector3 pos = GetMousePosition();
-            transform.position = Vector3.MoveTowards(transform.position, pos, Time.deltaTime * speed);
+            transform.position = Vector3.MoveTowards(transform.position, pos, Time.deltaTime * movingSpeed);
             animator.SetBool("isTouching", true);
             isTouching = true;
 
@@ -76,25 +78,23 @@ public class Player : MonoBehaviour
                 closestEnemy = enemy.gameObject;
                 transform.LookAt(closestEnemy.transform.position);
             }
-
-            isEnemySpotted = true;
         }
-        distanceBetweenClosestEnemy = float.MaxValue;
 
         if (isEnemySpotted)
         {
             if (!isShooting)
             {
-                StartCoroutine(Shoot());
+                //StartCoroutine(Shoot());
                 isShooting = true;
             }
         }
-
         else
         {
             StopCoroutine(Shoot());
             isShooting = false;
         }
+
+        distanceBetweenClosestEnemy = float.MaxValue;
     }
 
     Vector3 GetMousePosition()
@@ -113,23 +113,26 @@ public class Player : MonoBehaviour
     {
         while (true)
         {
+            Debug.Log("inside");
+            Vector3 lookingPos = transform.forward;
+            GameObject temp;
             if (isTouching)
             {
-                GameObject temp = Instantiate(bullet, touchingBulletPoint.position, Quaternion.identity);
-                temp.GetComponent<Rigidbody>().AddForce(closestEnemy.transform.position * Time.deltaTime * 2500);
+                temp = Instantiate(bullet, touchingBulletPoint.position, Quaternion.identity);
             }
             else
             {
-                GameObject temp = Instantiate(bullet, idleBulletPoint.position, Quaternion.identity);
-                temp.GetComponent<Rigidbody>().AddForce(closestEnemy.transform.position * Time.deltaTime * 2500);
+                temp = Instantiate(bullet, idleBulletPoint.position, Quaternion.identity);
             }
-            yield return new WaitForSeconds(0.7f);
+            temp.GetComponent<Rigidbody>().AddForce(lookingPos * Time.deltaTime * bulletSpeed, ForceMode.VelocityChange);
+            Destroy(temp, 3f);
+            yield return new WaitForSeconds(attackSpeed);
         }
     }
 
 
     private void OnDrawGizmos()
     {
-        Gizmos.DrawSphere(transform.position, radius);
+        Gizmos.DrawSphere(transform.position, range);
     }
 }
