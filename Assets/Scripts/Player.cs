@@ -7,6 +7,8 @@ public class Player : MonoBehaviour
     Animator animator;
 
     public GameObject bullet;
+    public Transform bulletSpawnPoint;
+    public Collider[] enemies;
 
     public float movingSpeed;
     public float bulletSpeed;
@@ -18,20 +20,13 @@ public class Player : MonoBehaviour
     bool isShooting;
     bool canShot;
 
-    float x1, y1, x2, y2;
-
     GameObject closestEnemy;
     float distanceBetweenClosestEnemy;
 
     float count = 0;
 
-    Transform touchingBulletPoint;
-    Transform idleBulletPoint;
-
     private void Start()
     {
-        touchingBulletPoint = transform.GetChild(2);
-        idleBulletPoint = transform.GetChild(3);
         animator = GetComponent<Animator>();
         distanceBetweenClosestEnemy = float.MaxValue;
         closestEnemy = null;
@@ -39,12 +34,13 @@ public class Player : MonoBehaviour
     void Update()
     {
         LayerMask enemyLayer = LayerMask.GetMask("Enemy");
-        Collider[] enemies = Physics.OverlapSphere(transform.position, range, enemyLayer, QueryTriggerInteraction.UseGlobal);
+        enemies = Physics.OverlapSphere(transform.position, range, enemyLayer, QueryTriggerInteraction.UseGlobal);
 
         if (enemies.Length >= 1)
         {
             animator.SetBool("isEnemySpotted", true);
             isEnemySpotted = true;
+
         }
 
         else
@@ -72,11 +68,17 @@ public class Player : MonoBehaviour
         foreach (Collider enemy in enemies)
         {
             float distance = Vector3.Distance(transform.position, enemy.transform.position);
+          
             if (distance < distanceBetweenClosestEnemy)
             {
                 distanceBetweenClosestEnemy = distance;
                 closestEnemy = enemy.gameObject;
-                transform.LookAt(closestEnemy.transform.position);
+                //transform.LookAt(closestEnemy.transform.position);
+
+                Vector3 lookVector = closestEnemy.transform.position - transform.position;
+                lookVector.y = transform.position.y;    
+                Quaternion rot = Quaternion.LookRotation(lookVector);
+                transform.rotation = Quaternion.Slerp(transform.localRotation, rot, Time.deltaTime * 20);
             }
         }
 
@@ -84,14 +86,14 @@ public class Player : MonoBehaviour
         {
             if (!isShooting)
             {
-                //StartCoroutine(Shoot());
                 isShooting = true;
+                StartCoroutine(Shoot());
             }
         }
         else
         {
-            StopCoroutine(Shoot());
             isShooting = false;
+            StopAllCoroutines();
         }
 
         distanceBetweenClosestEnemy = float.MaxValue;
@@ -111,21 +113,13 @@ public class Player : MonoBehaviour
 
     IEnumerator Shoot()
     {
-        while (true)
+        Debug.Log("Working");
+        while (isShooting)
         {
-            Debug.Log("inside");
-            Vector3 lookingPos = transform.forward;
-            GameObject temp;
-            if (isTouching)
-            {
-                temp = Instantiate(bullet, touchingBulletPoint.position, Quaternion.identity);
-            }
-            else
-            {
-                temp = Instantiate(bullet, idleBulletPoint.position, Quaternion.identity);
-            }
-            temp.GetComponent<Rigidbody>().AddForce(lookingPos * Time.deltaTime * bulletSpeed, ForceMode.VelocityChange);
+            GameObject temp = Instantiate(bullet, bulletSpawnPoint.position, Quaternion.identity);
+            temp.GetComponent<Rigidbody>().velocity = bulletSpawnPoint.forward * bulletSpeed;
             Destroy(temp, 3f);
+
             yield return new WaitForSeconds(attackSpeed);
         }
     }

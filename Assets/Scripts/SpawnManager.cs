@@ -23,7 +23,7 @@ public class SpawnManager : MonoBehaviour
         {
             Vector3 pos;
 
-            int spawnPoint = Random.Range(0, 8);
+            int spawnPoint = Random.Range(0, 5);
 
             switch (spawnPoint)
             {
@@ -42,7 +42,7 @@ public class SpawnManager : MonoBehaviour
                 case 4:
                     pos = new Vector3(gameManager.player.position.x, 0.82f, gameManager.player.position.z - spawnDistance);
                     break;
-                case 5:
+              /*  case 5:
                     pos = new Vector3(gameManager.player.position.x - spawnDistance / 2, 0.82f, gameManager.player.position.z - spawnDistance / 2);
                     break;
                 case 6:
@@ -51,10 +51,11 @@ public class SpawnManager : MonoBehaviour
                 case 7:
                     pos = new Vector3(gameManager.player.position.x - spawnDistance / 2, 0.82f, gameManager.player.position.z + spawnDistance / 2);
                     break;
+              */
                 default:
                     pos = Vector3.forward;
                     break;
-
+              
             }
             Instantiate(enemy, pos, Quaternion.identity);
             yield return new WaitForSeconds(spawnTime);
