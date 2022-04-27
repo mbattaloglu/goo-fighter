@@ -40,9 +40,7 @@ public class Enemy : MonoBehaviour
 
     private void Update()
     {
-        //Vector3 pos = new Vector3(gameManager.player.position.x, transform.position.y, gameManager.player.position.z);
-        //transform.position = Vector3.MoveTowards(transform.position, pos, Time.deltaTime * speed);
-
+        if(gameManager.player != null)
         agent.SetDestination(gameManager.player.position);
     }
 }

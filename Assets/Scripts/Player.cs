@@ -19,21 +19,39 @@ public class Player : MonoBehaviour
     bool isTouching;
     bool isShooting;
     bool canShot;
+    bool hasReborn;
 
     GameObject closestEnemy;
     float distanceBetweenClosestEnemy;
 
-    float count = 0;
+    LayerMask enemyLayer;
 
+    int health;
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.CompareTag("Enemy") && !hasReborn)
+        {
+            health--;
+            StartCoroutine(Reborn());
+            if (health <= 0)
+            {
+                Destroy(gameObject);
+                Debug.Log("Game Over");
+            }
+        }
+    }
     private void Start()
     {
+        hasReborn = false;
+        enemyLayer = LayerMask.GetMask("Enemy");
         animator = GetComponent<Animator>();
         distanceBetweenClosestEnemy = float.MaxValue;
         closestEnemy = null;
+        health = 3;
     }
     void Update()
     {
-        LayerMask enemyLayer = LayerMask.GetMask("Enemy");
         enemies = Physics.OverlapSphere(transform.position, range, enemyLayer, QueryTriggerInteraction.UseGlobal);
 
         if (enemies.Length >= 1)
@@ -52,11 +70,18 @@ public class Player : MonoBehaviour
         if (Input.GetMouseButton(0))
         {
             Vector3 pos = GetMousePosition();
+            pos.y = transform.position.y;
             transform.position = Vector3.MoveTowards(transform.position, pos, Time.deltaTime * movingSpeed);
             animator.SetBool("isTouching", true);
             isTouching = true;
 
-            if (closestEnemy == null) transform.LookAt(pos);
+            if (closestEnemy == null)
+            {
+                Vector3 lookVector = pos- transform.position;
+                lookVector.y = transform.position.y;
+                Quaternion rot = Quaternion.LookRotation(lookVector);
+                transform.rotation = Quaternion.Lerp(transform.localRotation, rot, Time.deltaTime * 200);
+            }
         }
 
         else if (Input.GetMouseButtonUp(0))
@@ -73,12 +98,11 @@ public class Player : MonoBehaviour
             {
                 distanceBetweenClosestEnemy = distance;
                 closestEnemy = enemy.gameObject;
-                //transform.LookAt(closestEnemy.transform.position);
 
                 Vector3 lookVector = closestEnemy.transform.position - transform.position;
-                lookVector.y = transform.position.y;    
+                lookVector.y = transform.position.y;
                 Quaternion rot = Quaternion.LookRotation(lookVector);
-                transform.rotation = Quaternion.Slerp(transform.localRotation, rot, Time.deltaTime * 20);
+                transform.rotation = Quaternion.Lerp(transform.localRotation, rot, Time.deltaTime * 200);
             }
         }
 
@@ -114,7 +138,7 @@ public class Player : MonoBehaviour
     IEnumerator Shoot()
     {
         Debug.Log("Working");
-        while (isShooting)
+        while (true)
         {
             GameObject temp = Instantiate(bullet, bulletSpawnPoint.position, Quaternion.identity);
             temp.GetComponent<Rigidbody>().velocity = bulletSpawnPoint.forward * bulletSpeed;
@@ -122,6 +146,21 @@ public class Player : MonoBehaviour
 
             yield return new WaitForSeconds(attackSpeed);
         }
+    }
+
+    IEnumerator Reborn()
+    {
+        Vector3 initialScale = transform.localScale;
+        Vector3 zeroScale = Vector3.zero;
+        hasReborn = true;
+        transform.localScale = zeroScale;
+        yield return new WaitForSeconds(0.2f);
+        transform.localScale = initialScale;
+        yield return new WaitForSeconds(0.2f);
+        transform.localScale = zeroScale;
+        yield return new WaitForSeconds(0.2f);
+        transform.localScale = initialScale;
+        hasReborn = false;
     }
 
 
